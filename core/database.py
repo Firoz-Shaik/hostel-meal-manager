@@ -1,48 +1,38 @@
 import streamlit as st
 import libsql_client
 import asyncio
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 
 # --- Turso Database Connection ---
-@contextmanager
-def get_db_connection():
+@asynccontextmanager
+async def get_db_connection():
     """
-    Provides a database connection to Turso using credentials from st.secrets.
-    This includes the final, most robust fix for the asyncio event loop issue.
+    Provides an asynchronous database connection to Turso.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
-    # Final, robust fix: This ensures that an event loop is always available
-    # in the current thread, which is required by the underlying aiohttp library.
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    client = None
-    try:
-        # We create the client directly within this managed context.
+        # The correct function is create_client, which returns a client
+        # that supports both sync and async operations.
         client = libsql_client.create_client(url=url, auth_token=auth_token)
         yield client
     except Exception as e:
         st.error(f"Database connection error: {e}")
         raise
     finally:
-        if client:
+        if 'client' in locals() and client:
             client.close()
 
 # --- Database Schema Setup ---
-def setup_database_tables():
+async def setup_database_tables():
     """
-    Initializes the database with the required tables.
-    This function should be run once when the app is first deployed.
+    Initializes the database with the required tables asynchronously.
     """
-    with get_db_connection() as client:
-        # The standard client uses a synchronous batch method.
-        client.batch([
+    async with get_db_connection() as client:
+        # Use the async batch method
+        await client.batch([
             'CREATE TABLE IF NOT EXISTS hostels (hostel_id TEXT PRIMARY KEY, hostel_name TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
             '''
             CREATE TABLE IF NOT EXISTS users (

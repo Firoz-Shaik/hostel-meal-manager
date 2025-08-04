@@ -1,4 +1,5 @@
 import streamlit as st
+import asyncio
 from core import services as serv
 
 st.set_page_config(page_title="Hostel Meal System", page_icon="🏠", layout="centered", initial_sidebar_state="collapsed")
@@ -13,7 +14,8 @@ def load_css():
     """, unsafe_allow_html=True)
 
 load_css()
-serv.setup_database()
+# Run the async setup function
+asyncio.run(serv.setup_database())
 
 def register_hostel_page():
     st.title("Hostel Registration")
@@ -26,7 +28,7 @@ def register_hostel_page():
         if submitted:
             if all([hostel_name, admin_user_id, admin_password]):
                 with st.spinner("Registering..."):
-                    hostel_id = serv.register_hostel(hostel_name, admin_user_id, admin_password)
+                    hostel_id = asyncio.run(serv.register_hostel(hostel_name, admin_user_id, admin_password))
                 if hostel_id:
                     st.session_state.page = 'registration_success'
                     st.session_state.new_hostel_id = hostel_id
@@ -48,7 +50,7 @@ def login_page():
         if st.button("Continue", use_container_width=True, type="primary"):
             if not hostel_id_input:
                 st.error("Hostel ID cannot be empty.")
-            elif serv.check_hostel_id_exists(hostel_id_input):
+            elif asyncio.run(serv.check_hostel_id_exists(hostel_id_input)):
                 st.session_state.hostel_id = hostel_id_input
                 st.rerun()
             else:
@@ -58,7 +60,7 @@ def login_page():
             st.rerun()
         return
 
-    hostel_name = serv.get_hostel_name(st.session_state.hostel_id)
+    hostel_name = asyncio.run(serv.get_hostel_name(st.session_state.hostel_id))
     st.header(f"Step 2: Login to {hostel_name}")
     with st.form("login_form"):
         user_id = st.text_input("User ID")
@@ -68,7 +70,7 @@ def login_page():
             if not user_id or not password:
                 st.error("User ID and Password are required.")
             else:
-                role = serv.authenticate_user(st.session_state.hostel_id, user_id, password)
+                role = asyncio.run(serv.authenticate_user(st.session_state.hostel_id, user_id, password))
                 if role:
                     st.session_state.logged_in = True
                     st.session_state.user_id = user_id.upper()
@@ -82,22 +84,19 @@ def login_page():
         st.rerun()
 
 def welcome_page():
-    # ... (welcome_page and registration_success_page are unchanged)
     st.title("Welcome to the Hostel Meal Management Platform")
     st.write("A smart solution to reduce food waste and manage hostel messes efficiently.")
     col1, col2 = st.columns(2)
-    with col1:
-        with st.container(border=True):
-            st.subheader("Existing User?")
-            if st.button("Login to Your Hostel", use_container_width=True):
-                st.session_state.page = 'login'
-                st.rerun()
-    with col2:
-        with st.container(border=True):
-            st.subheader("New Hostel?")
-            if st.button("Register Your Hostel", use_container_width=True, type="primary"):
-                st.session_state.page = 'register'
-                st.rerun()
+    with col1, st.container(border=True):
+        st.subheader("Existing User?")
+        if st.button("Login to Your Hostel", use_container_width=True):
+            st.session_state.page = 'login'
+            st.rerun()
+    with col2, st.container(border=True):
+        st.subheader("New Hostel?")
+        if st.button("Register Your Hostel", use_container_width=True, type="primary"):
+            st.session_state.page = 'register'
+            st.rerun()
 
 def registration_success_page():
     st.title("Registration Successful")
