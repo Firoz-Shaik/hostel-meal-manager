@@ -1,34 +1,37 @@
-import sqlite3
+import streamlit as st
+import libsql_client
 from contextlib import contextmanager
 from datetime import date, datetime
 
-def adapt_date_iso(val):
-    return val.isoformat()
-
-def convert_date_iso(val):
-    return datetime.strptime(val.decode('utf-8'), '%Y-%m-%d').date()
-
-sqlite3.register_adapter(date, adapt_date_iso)
-sqlite3.register_converter("DATE", convert_date_iso)
-
-DB_FILE = "multi_hostel_meals.db"
-
+# --- Turso Database Connection ---
 @contextmanager
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE, detect_types=sqlite3.PARSE_DECLTYPES)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-    finally:
-        conn.close()
+    """
+    Provides a database connection to Turso using credentials from st.secrets.
+    """
+    url = st.secrets["TURSO_DATABASE_URL"]
+    auth_token = st.secrets["TURSO_AUTH_TOKEN"]
+    
+    # The 'with' statement for the client handles opening and closing.
+    with libsql_client.create_client(url=url, auth_token=auth_token) as client:
+        try:
+            yield client
+        except Exception as e:
+            # This helps in debugging connection issues.
+            st.error(f"Database connection error: {e}")
+            raise
 
+# --- Database Schema Setup ---
 def setup_database_tables():
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS hostels (hostel_id TEXT PRIMARY KEY, hostel_name TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)')
-        
-        # Updated users table with tracking
-        cursor.execute('''
+    """
+    Initializes the database with the required tables.
+    This function should be run once when the app is first deployed.
+    """
+    with get_db_connection() as client:
+        # The libsql client can execute multiple statements at once.
+        client.batch([
+            'CREATE TABLE IF NOT EXISTS hostels (hostel_id TEXT PRIMARY KEY, hostel_name TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
+            '''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 hostel_id TEXT NOT NULL,
@@ -40,9 +43,8 @@ def setup_database_tables():
                 FOREIGN KEY (hostel_id) REFERENCES hostels (hostel_id),
                 UNIQUE (hostel_id, user_id)
             )
-        ''')
-        
-        cursor.execute('''
+            ''',
+            '''
             CREATE TABLE IF NOT EXISTS meal_responses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 hostel_id TEXT NOT NULL,
@@ -60,12 +62,9 @@ def setup_database_tables():
                 submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (hostel_id) REFERENCES hostels (hostel_id)
             )
-        ''')
-
-        cursor.execute('CREATE TABLE IF NOT EXISTS daily_summary (id INTEGER PRIMARY KEY AUTOINCREMENT, hostel_id TEXT NOT NULL, report_date DATE NOT NULL, total_students INTEGER, breakfast_opt_in INTEGER, lunch_opt_in INTEGER, dinner_opt_in INTEGER, responded_students INTEGER, FOREIGN KEY (hostel_id) REFERENCES hostels (hostel_id), UNIQUE (hostel_id, report_date))')
-        
-        cursor.execute('DROP TABLE IF EXISTS billing')
-        cursor.execute('''
+            ''',
+            'CREATE TABLE IF NOT EXISTS daily_summary (id INTEGER PRIMARY KEY AUTOINCREMENT, hostel_id TEXT NOT NULL, report_date DATE NOT NULL, total_students INTEGER, breakfast_opt_in INTEGER, lunch_opt_in INTEGER, dinner_opt_in INTEGER, responded_students INTEGER, FOREIGN KEY (hostel_id) REFERENCES hostels (hostel_id), UNIQUE (hostel_id, report_date))',
+            '''
             CREATE TABLE IF NOT EXISTS bills (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 hostel_id TEXT NOT NULL,
@@ -74,5 +73,8 @@ def setup_database_tables():
                 purchase_date DATE NOT NULL,
                 FOREIGN KEY (hostel_id) REFERENCES hostels (hostel_id)
             )
-        ''')
-        conn.commit()
+            '''
+        ])
+
+# Note: The date adapters from the previous version are not needed
+# because the libsql client handles date/time types correctly.
