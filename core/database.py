@@ -2,14 +2,13 @@ import streamlit as st
 import libsql_client
 import asyncio
 from contextlib import asynccontextmanager
-from datetime import date, datetime
 
 # --- Turso Database Connection ---
 @asynccontextmanager
 async def get_db_connection():
     """
     Provides an asynchronous database connection to Turso.
-    This includes a fix for the WSS (WebSocket Secure) handshake error.
+    This includes the fix for the WSS handshake error.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
@@ -18,15 +17,15 @@ async def get_db_connection():
     if url.startswith("libsql://"):
         url = "wss://" + url[len("libsql://"):]
 
+    # The create_client function returns a client that supports async operations.
+    client = libsql_client.create_client(url=url, auth_token=auth_token)
     try:
-        # The create_client function returns a client that supports async operations.
-        client = libsql_client.create_client(url=url, auth_token=auth_token)
         yield client
     except Exception as e:
         st.error(f"Database connection error: {e}")
         raise
     finally:
-        if 'client' in locals() and client:
+        if client:
             client.close()
 
 # --- Database Schema Setup ---

@@ -15,7 +15,11 @@ def load_css():
 
 load_css()
 # Run the async setup function
-asyncio.run(serv.setup_database())
+try:
+    asyncio.run(serv.setup_database())
+except Exception as e:
+    # This can happen if the event loop is already running, which is fine.
+    pass
 
 def register_hostel_page():
     st.title("Hostel Registration")
