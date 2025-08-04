@@ -9,13 +9,17 @@ from datetime import date, datetime
 async def get_db_connection():
     """
     Provides an asynchronous database connection to Turso.
+    This includes a fix for the WSS (WebSocket Secure) handshake error.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
+    # Fix for WSServerHandshakeError: Manually change protocol to wss
+    if url.startswith("libsql://"):
+        url = "wss://" + url[len("libsql://"):]
+
     try:
-        # The correct function is create_client, which returns a client
-        # that supports both sync and async operations.
+        # The create_client function returns a client that supports async operations.
         client = libsql_client.create_client(url=url, auth_token=auth_token)
         yield client
     except Exception as e:
