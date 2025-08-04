@@ -8,14 +8,15 @@ from contextlib import asynccontextmanager
 async def get_db_connection():
     """
     Provides an asynchronous database connection to Turso.
-    This includes the fix for the WSS handshake error.
+    This includes the final fix for the handshake error by using https.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
-    # Fix for WSServerHandshakeError: Manually change protocol to wss
+    # Final Fix: Change protocol to https, which is more stable than wss
+    # in many cloud environments.
     if url.startswith("libsql://"):
-        url = "wss://" + url[len("libsql://"):]
+        url = "https://" + url[len("libsql://"):]
 
     # The create_client function returns a client that supports async operations.
     client = libsql_client.create_client(url=url, auth_token=auth_token)
