@@ -1,6 +1,7 @@
 import streamlit as st
 import asyncio
 from core import services as serv
+from utils import helpers as help
 
 st.set_page_config(page_title="Hostel Meal System", page_icon="🏠", layout="centered", initial_sidebar_state="collapsed")
 
@@ -14,12 +15,8 @@ def load_css():
     """, unsafe_allow_html=True)
 
 load_css()
-# Run the async setup function
-try:
-    asyncio.run(serv.setup_database())
-except Exception as e:
-    # This can happen if the event loop is already running, which is fine.
-    pass
+# Use the safe async runner
+help.run_async(serv.setup_database())
 
 def register_hostel_page():
     st.title("Hostel Registration")
@@ -32,7 +29,7 @@ def register_hostel_page():
         if submitted:
             if all([hostel_name, admin_user_id, admin_password]):
                 with st.spinner("Registering..."):
-                    hostel_id = asyncio.run(serv.register_hostel(hostel_name, admin_user_id, admin_password))
+                    hostel_id = help.run_async(serv.register_hostel(hostel_name, admin_user_id, admin_password))
                 if hostel_id:
                     st.session_state.page = 'registration_success'
                     st.session_state.new_hostel_id = hostel_id
@@ -54,7 +51,7 @@ def login_page():
         if st.button("Continue", use_container_width=True, type="primary"):
             if not hostel_id_input:
                 st.error("Hostel ID cannot be empty.")
-            elif asyncio.run(serv.check_hostel_id_exists(hostel_id_input)):
+            elif help.run_async(serv.check_hostel_id_exists(hostel_id_input)):
                 st.session_state.hostel_id = hostel_id_input
                 st.rerun()
             else:
@@ -64,7 +61,7 @@ def login_page():
             st.rerun()
         return
 
-    hostel_name = asyncio.run(serv.get_hostel_name(st.session_state.hostel_id))
+    hostel_name = help.run_async(serv.get_hostel_name(st.session_state.hostel_id))
     st.header(f"Step 2: Login to {hostel_name}")
     with st.form("login_form"):
         user_id = st.text_input("User ID")
@@ -74,7 +71,7 @@ def login_page():
             if not user_id or not password:
                 st.error("User ID and Password are required.")
             else:
-                role = asyncio.run(serv.authenticate_user(st.session_state.hostel_id, user_id, password))
+                role = help.run_async(serv.authenticate_user(st.session_state.hostel_id, user_id, password))
                 if role:
                     st.session_state.logged_in = True
                     st.session_state.user_id = user_id.upper()
