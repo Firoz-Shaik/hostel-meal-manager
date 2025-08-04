@@ -2,3 +2,4 @@ streamlit
 pandas
 passlib
 bcrypt==3.2.2
+libsql-client
