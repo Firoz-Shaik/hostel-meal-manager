@@ -1,5 +1,6 @@
 import streamlit as st
 import libsql_client
+import asyncio
 from contextlib import contextmanager
 from datetime import date, datetime
 
@@ -8,18 +9,24 @@ from datetime import date, datetime
 def get_db_connection():
     """
     Provides a database connection to Turso using credentials from st.secrets.
+    This includes a fix for the asyncio event loop issue on Streamlit Cloud.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
-    # The 'with' statement for the client handles opening and closing.
-    with libsql_client.create_client(url=url, auth_token=auth_token) as client:
-        try:
+    # Fix for Streamlit Cloud's event loop
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        with libsql_client.create_client(url=url, auth_token=auth_token) as client:
             yield client
-        except Exception as e:
-            # This helps in debugging connection issues.
-            st.error(f"Database connection error: {e}")
-            raise
+    except Exception as e:
+        st.error(f"Database connection error: {e}")
+        raise
 
 # --- Database Schema Setup ---
 def setup_database_tables():
