@@ -9,6 +9,7 @@ def load_css():
     st.markdown("""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+            @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
             html, body, [class*="st-"], [class*="css-"] { font-family: 'Inter', sans-serif; }
             .st-emotion-cache-1y4p8pa { padding-top: 2rem; }
             
@@ -25,6 +26,28 @@ def load_css():
             /* Sidebar styling */
             .css-1d391kg {
                 font-family: 'Inter', sans-serif;
+            }
+            
+            /* Fix Material Icons in sidebar */
+            .material-icons {
+                font-family: 'Material Icons';
+                font-weight: normal;
+                font-style: normal;
+                font-size: 24px;
+                line-height: 1;
+                letter-spacing: normal;
+                text-transform: none;
+                display: inline-block;
+                white-space: nowrap;
+                word-wrap: normal;
+                direction: ltr;
+                -webkit-font-feature-settings: 'liga';
+                -webkit-font-smoothing: antialiased;
+            }
+            
+            /* Override any broken icon display */
+            [class*="css-"] .material-icons {
+                font-family: 'Material Icons' !important;
             }
         </style>
     """, unsafe_allow_html=True)
