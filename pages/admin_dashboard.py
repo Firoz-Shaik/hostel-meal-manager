@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, time
 from core import services as serv
-from utils import helpers as help
 
 st.set_page_config(page_title="Admin Dashboard", page_icon="⚙️", layout="wide")
 
@@ -21,8 +20,7 @@ if not st.session_state.get("logged_in") or st.session_state.get("role") != 'adm
     st.page_link("app.py", label="Go to Login", icon="🏠")
     st.stop()
 
-# Use the safe async runner
-hostel_name = help.run_async(serv.get_hostel_name(st.session_state.hostel_id))
+hostel_name = serv.get_hostel_name(st.session_state.hostel_id)
 with st.sidebar:
     st.header(f"Hostel: {hostel_name}")
     st.write(f"User: `{st.session_state.user_id}`")
@@ -33,7 +31,7 @@ with st.sidebar:
 
 def analytics_tab(hostel_id):
     st.header("Live Meal Count for Tomorrow")
-    live_counts = help.run_async(serv.get_live_meal_counts(hostel_id))
+    live_counts = serv.get_live_meal_counts(hostel_id)
     with st.container(border=True):
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("🍳 Live Breakfasts", live_counts['breakfast'])
@@ -45,7 +43,7 @@ def analytics_tab(hostel_id):
     if datetime.now().time() > time(18, 0):
         if st.button("Generate Final Report & Meal Passes", type="primary"):
             with st.spinner("Generating..."):
-                message = help.run_async(serv.generate_daily_report_and_passes(hostel_id))
+                message = serv.generate_daily_report_and_passes(hostel_id)
                 st.success(message)
     else:
         st.info("Final report generation is available after 6:00 PM.", icon="🕒")
@@ -60,7 +58,7 @@ def user_management_tab(hostel_id, current_admin_id):
                 new_user_id = st.text_input("New Student User ID")
                 new_password = st.text_input("New Student Password", type="password")
                 if st.form_submit_button("Add Student", use_container_width=True, type="primary"):
-                    if help.run_async(serv.add_user(hostel_id, new_user_id, new_password, 'student', current_admin_id)):
+                    if serv.add_user(hostel_id, new_user_id, new_password, 'student', current_admin_id):
                         st.success(f"Student '{new_user_id}' added.")
                     else:
                         st.error(f"Student '{new_user_id}' already exists.")
@@ -70,7 +68,7 @@ def user_management_tab(hostel_id, current_admin_id):
                 new_admin_id = st.text_input("New Admin User ID")
                 admin_password = st.text_input("New Admin Password", type="password")
                 if st.form_submit_button("Add Admin", use_container_width=True, type="primary"):
-                    if help.run_async(serv.add_user(hostel_id, new_admin_id, admin_password, 'admin', current_admin_id)):
+                    if serv.add_user(hostel_id, new_admin_id, admin_password, 'admin', current_admin_id):
                         st.success(f"Admin '{new_admin_id}' added.")
                     else:
                         st.error(f"Admin '{new_admin_id}' already exists.")
@@ -84,7 +82,7 @@ def user_management_tab(hostel_id, current_admin_id):
                     if not user_to_change or not new_password:
                         st.warning("Please provide both a User ID and a new password.")
                     else:
-                        if help.run_async(serv.change_password(hostel_id, user_to_change, new_password)):
+                        if serv.change_password(hostel_id, user_to_change, new_password):
                             st.success(f"Password for '{user_to_change}' has been updated.")
                         else:
                             st.error(f"User '{user_to_change}' not found.")
@@ -99,7 +97,7 @@ def user_management_tab(hostel_id, current_admin_id):
                     elif user_to_remove.upper() == current_admin_id.upper():
                         st.error("You cannot remove yourself.")
                     else:
-                        if help.run_async(serv.remove_user(hostel_id, user_to_remove)):
+                        if serv.remove_user(hostel_id, user_to_remove):
                             st.success(f"User '{user_to_remove}' has been removed.")
                         else:
                             st.error(f"User '{user_to_remove}' not found.")
@@ -116,7 +114,7 @@ def verification_tab(hostel_id):
                 if not pass_suffix:
                     st.warning("Pass code cannot be empty.")
                 else:
-                    msg, student = help.run_async(serv.verify_meal_pass(hostel_id, meal_choice, pass_suffix))
+                    msg, student = serv.verify_meal_pass(hostel_id, meal_choice, pass_suffix)
                     st.success(msg) if student else st.error(msg)
 
 def bills_tab(hostel_id):
@@ -129,13 +127,13 @@ def bills_tab(hostel_id):
             price = st.number_input("Price (₹)", min_value=0.0, format="%.2f")
             if st.form_submit_button("Add Bill", use_container_width=True, type="primary"):
                 if item_name and price > 0:
-                    help.run_async(serv.add_bill(hostel_id, item_name, price))
+                    serv.add_bill(hostel_id, item_name, price)
                     st.success("Bill added successfully!")
                 else:
                     st.warning("Please provide both an item name and a valid price.")
     with st.container(border=True):
         st.subheader("Expense History")
-        bills_df = help.run_async(serv.get_bills(hostel_id))
+        bills_df = serv.get_bills(hostel_id)
         if not bills_df.empty:
             bills_df['purchase_date'] = pd.to_datetime(bills_df['purchase_date']).dt.strftime('%d %B %Y')
             st.dataframe(bills_df, use_container_width=True, hide_index=True)
@@ -145,7 +143,7 @@ def bills_tab(hostel_id):
 # --- Main Admin Dashboard ---
 hostel_id = st.session_state.hostel_id
 current_admin_id = st.session_state.user_id
-summary = help.run_async(serv.get_hostel_summary(hostel_id))
+summary = serv.get_hostel_summary(hostel_id)
 st.title(f"⚙️ Admin Dashboard: {summary['name']}")
 sum_col1, sum_col2, sum_col3 = st.columns(3)
 sum_col1.metric("Hostel Name", summary['name'])
