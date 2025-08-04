@@ -11,6 +11,21 @@ def load_css():
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
             html, body, [class*="st-"], [class*="css-"] { font-family: 'Inter', sans-serif; }
             .st-emotion-cache-1y4p8pa { padding-top: 2rem; }
+            
+            /* Fix for icon rendering issues */
+            .stButton > button {
+                font-family: 'Inter', sans-serif;
+            }
+            
+            /* Ensure emoji icons render properly */
+            .stMarkdown {
+                font-family: 'Inter', sans-serif;
+            }
+            
+            /* Sidebar styling */
+            .css-1d391kg {
+                font-family: 'Inter', sans-serif;
+            }
         </style>
     """, unsafe_allow_html=True)
 

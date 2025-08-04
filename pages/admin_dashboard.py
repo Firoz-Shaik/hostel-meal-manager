@@ -11,6 +11,21 @@ def load_css():
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
             html, body, [class*="st-"], [class*="css-"] { font-family: 'Inter', sans-serif; }
+            
+            /* Fix for icon rendering issues */
+            .stButton > button {
+                font-family: 'Inter', sans-serif;
+            }
+            
+            /* Ensure emoji icons render properly */
+            .stMarkdown {
+                font-family: 'Inter', sans-serif;
+            }
+            
+            /* Sidebar styling */
+            .css-1d391kg {
+                font-family: 'Inter', sans-serif;
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -24,9 +39,10 @@ if not st.session_state.get("logged_in") or st.session_state.get("role") != 'adm
 # Use the safe async runner
 hostel_name = help.run_async(serv.get_hostel_name(st.session_state.hostel_id))
 with st.sidebar:
-    st.header(f"Hostel: {hostel_name}")
-    st.write(f"User: `{st.session_state.user_id}`")
-    if st.button("Logout", use_container_width=True):
+    st.markdown(f"### 🏠 {hostel_name}")
+    st.markdown(f"**User:** `{st.session_state.user_id}`")
+    st.divider()
+    if st.button("🚪 Logout", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("app.py")
