@@ -9,25 +9,30 @@ from datetime import date, datetime
 def get_db_connection():
     """
     Provides a database connection to Turso using credentials from st.secrets.
-    This includes a fix for the asyncio event loop issue on Streamlit Cloud.
+    This includes the final, most robust fix for the asyncio event loop issue.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
-    # This is the standard fix for the "no running event loop" error
-    # that occurs with libraries like aiohttp in Streamlit's threaded environment.
+    # Final, robust fix: This ensures that an event loop is always available
+    # in the current thread, which is required by the underlying aiohttp library.
     try:
-        asyncio.get_running_loop()
+        loop = asyncio.get_event_loop()
     except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
+    client = None
     try:
-        # Corrected function name: create_client (not create_client_async)
-        with libsql_client.create_client(url=url, auth_token=auth_token) as client:
-            yield client
+        # We create the client directly within this managed context.
+        client = libsql_client.create_client(url=url, auth_token=auth_token)
+        yield client
     except Exception as e:
         st.error(f"Database connection error: {e}")
         raise
+    finally:
+        if client:
+            client.close()
 
 # --- Database Schema Setup ---
 def setup_database_tables():
@@ -36,7 +41,7 @@ def setup_database_tables():
     This function should be run once when the app is first deployed.
     """
     with get_db_connection() as client:
-        # The standard client uses a synchronous batch method, so 'await' is not needed.
+        # The standard client uses a synchronous batch method.
         client.batch([
             'CREATE TABLE IF NOT EXISTS hostels (hostel_id TEXT PRIMARY KEY, hostel_name TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
             '''
