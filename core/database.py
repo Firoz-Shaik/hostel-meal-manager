@@ -9,17 +9,16 @@ from datetime import date, datetime
 def get_db_connection():
     """
     Provides a database connection to Turso using credentials from st.secrets.
-    This includes a fix for the asyncio event loop issue on Streamlit Cloud.
+    This includes a more robust fix for the asyncio event loop issue on Streamlit Cloud.
     """
     url = st.secrets["TURSO_DATABASE_URL"]
     auth_token = st.secrets["TURSO_AUTH_TOKEN"]
     
-    # Fix for Streamlit Cloud's event loop
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    # Robust fix for Streamlit Cloud's event loop management.
+    # This forces a new event loop for the current thread, which is necessary
+    # for libraries like aiohttp (used by libsql-client) to run correctly.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     try:
         with libsql_client.create_client(url=url, auth_token=auth_token) as client:
