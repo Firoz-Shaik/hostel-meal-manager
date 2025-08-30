@@ -2,7 +2,7 @@
 Problem Statement
 Hostel Meal Manager is a data-driven solution for hostels to efficiently manage meal planning, reduce food waste, and streamline communication between students and administration.
 
-Features
+**Features**
 This application provides a seamless experience for both students and administrators with role-based access and functionalities:
 
 For Students:
@@ -29,19 +29,18 @@ Bill & Expense Management: Admins can track and manage mess-related expenses.
 
 Daily Report Generation: After the daily cut-off, admins can generate a final report with the total meal counts.
 
-Tech Stack
-The technologies used in this project were chosen to create a robust, scalable, and easy-to-use application.
+**Tech Stack**
+The technologies used in this project were chosen to create a robust and easy-to-use application.
 
-Technology	Purpose
+**Technology	Purpose**
 Streamlit	The core framework for building the web application. Its simplicity and speed of development make it ideal for data-driven applications and internal tools like this.
 libsql-client	The official Python client for Turso DB, a distributed SQLite-compatible database. It provides a simple and efficient way to interact with the database.
 Turso DB	A distributed SQLite for production. It's a serverless database that's easy to use and scales with the application.
 Pandas	Used for data manipulation and analysis, especially for handling and displaying billing information.
 Passlib & Bcrypt	For securely hashing and verifying user passwords.
 
-Export to Sheets
-Architectural Decisions
-The decision to use Streamlit as the frontend framework was a key architectural choice for this project. Streamlit's primary advantage is its ability to rapidly create data-centric web applications with minimal code. This allowed for a focus on the core business logic—meal management and data analysis—rather than on complex frontend development.
+**Architectural Decisions**
+The decision to use Streamlit as the frontend framework was a key architectural choice for this project. Streamlit's primary advantage is its ability to rapidly create data-centric web applications with minimal code and resources. This allowed for a focus on the core logic—meal management rather than on complex frontend development.
 
 However, this choice comes with a trade-off. Streamlit executes the entire script from top to bottom on every user interaction, which can be inefficient for applications with complex state management. To mitigate this, we've used Streamlit's session state to maintain user login status and other session-specific data.
 
